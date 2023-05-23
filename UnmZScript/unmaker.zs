@@ -50,6 +50,20 @@ class JGP_Unmaker : Weapon
         if (owner.FindInventory("JGP_UnmakerKeyPurple"))
             lv++;
         
+        name iconName = "LGUNA0";
+        switch (lv) {
+        case 1:
+            iconName = "LGUNB0";
+            break;
+        case 2:
+            iconName = "LGUNC0";
+            break;
+        case 3:
+            iconName = "LGUND0";
+            break;
+        }
+
+        Icon = TexMan.CheckForTexture(iconName, TexMan.Type_Any, TexMan.Type_Any);
 
         unmklevel = lv;
         return unmklevel;
