@@ -2,7 +2,6 @@ class JGP_Unmaker : Weapon
 {
     int sideBeamOffset;
     protected int unmklevel;
-    const MAXLEVEL = 3;
 
     // The original tic values are 8, 5 and 4,
     // but D64's ticrate is 30, not 35.
@@ -18,11 +17,9 @@ class JGP_Unmaker : Weapon
     override void OwnerDied()
     {
         unmklevel = 0;
-    }
-
-    clearscope int GetLevel()
-    {
-        return unmklevel;
+        owner.A_TakeInventory("JGP_UnmakerKeyCyan", 0);
+        owner.A_TakeInventory("JGP_UnmakerKeyOrange", 0);
+        owner.A_TakeInventory("JGP_UnmakerKeyPurple", 0);
     }
 
     static int LevelUp(Actor carrier)
@@ -33,11 +30,29 @@ class JGP_Unmaker : Weapon
         JGP_Unmaker um = JGP_Unmaker(carrier.FindInventory("JGP_Unmaker"));
         if (um)
         {
-            um.unmklevel = Clamp(um.unmklevel + 1, 0, JGP_Unmaker.MAXLEVEL);
+            um.GetLevel();
             return um.unmklevel;
         }
 
         return -1;
+    }
+
+    int GetLevel()
+    {
+        if (!owner)
+            return -1;
+
+        int lv = 0;
+        if (owner.FindInventory("JGP_UnmakerKeyCyan"))
+            lv++;
+        if (owner.FindInventory("JGP_UnmakerKeyOrange"))
+            lv++;
+        if (owner.FindInventory("JGP_UnmakerKeyPurple"))
+            lv++;
+        
+
+        unmklevel = lv;
+        return unmklevel;
     }
 
     Default
@@ -48,6 +63,12 @@ class JGP_Unmaker : Weapon
         Weapon.ammoGive 80;
         Tag "Unmaker";
         Inventory.PickupMessage "What the !@#%* is this!";
+    }
+
+    override void AttachToOwner(Actor other)
+    {
+        super.AttachToOwner(other);
+        GetLevel();
     }
 
     action void FireSingleBeam(double angleofs, int damage = 10)
@@ -65,7 +86,7 @@ class JGP_Unmaker : Weapon
         if (!psp)
             return;
 
-        int ulevel = invoker.unmklevel;
+        int ulevel = invoker.GetLevel();
 
         int ttics = FIRERATE_LV0;
         switch (ulevel) {
@@ -251,14 +272,6 @@ class JGP_UnmakerKeyBase : Inventory abstract
             JGP_Unmaker.LevelUp(owner);
         }
         return false;
-    }
-
-    override bool TryPickup (in out Actor toucher)
-    {
-        if (!toucher.FindInventory ("JGP_Unmaker"))
-            return false;
-        
-        return super.TryPickup(toucher);
     }
 
     void SpawnLights(double baseLightSize = 36, int lightSizeStep = 3)
