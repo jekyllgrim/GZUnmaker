@@ -50,19 +50,10 @@ class JGP_Unmaker : Weapon
         Inventory.PickupMessage "What the !@#%* is this!";
     }
 
-    override void AttachToOwner(Actor other)
-    {
-        super.AttachToOwner(other);
-        if (owner)
-        {
-            owner.A_GiveInventory("JGP_Unmaker", 1);
-        }
-    }
-
     action void FireSingleBeam(double angleofs, int damage = 10)
     {
         damage *= random(1, 8);
-        A_FireBullets(angleofs, 0, -1, damage, "JGP_UnmakerPuff", FBF_NoRandom|FBF_NoRandomPuffZ|FBF_ExplicitAngle, missile: "JGP_UnmakerProjectile", spawnheight: 0);
+        A_FireBullets(angleofs, 0, -1, damage, "JGP_UnmakerPuff", FBF_NoRandom|FBF_NoFlash|FBF_NoRandomPuffZ|FBF_ExplicitAngle, missile: "JGP_UnmakerProjectile", spawnheight: 0);
     }
 
     action void A_FireUnmaker()
@@ -161,8 +152,19 @@ class JGP_Unmaker : Weapon
         {
             A_OverlayFlags(OverlayID(), PSPF_RenderStyle|PSPF_ForceAlpha, true);
             A_OverlayRenderstyle(OverlayID(), STYLE_Add);
+            A_AttachLight(
+                "UnmakerMuzzleFlash",
+                DynamicLight.FlickerLight ,
+                "ff350d",
+                80,
+                72,
+                DYNAMICLIGHT.LF_ATTENUATE,
+                param: 0.2
+            );
+
         }
         LASR IHGFEDCB 1 bright;
+        TNT1 A 0 A_RemoveLight("UnmakerMuzzleFlash");
         stop;
     }
 }
@@ -221,11 +223,25 @@ class JGP_UnmakerProjectile : Actor
 
 class JGP_UnmakerKeyBase : Inventory abstract
 {
+    color keycolor;
+    property keycolor : keycolor;
+
     Default
     {
         +INVENTORY.AUTOACTIVATE
+        +BRIGHT
         Inventory.maxamount 1;
         Inventory.pickupsound "misc/p_pkup";
+        YScale 0.834;
+    }
+
+    override void Tick()
+    {
+        super.Tick();
+        if (owner || bNOSECTOR)
+        {
+            A_RemoveLight("UnmakerKeyLight");
+        }
     }
 
     override bool Use (bool pickup)
@@ -233,9 +249,50 @@ class JGP_UnmakerKeyBase : Inventory abstract
         if (owner)
         {
             JGP_Unmaker.LevelUp(owner);
-            return true;
         }
         return false;
+    }
+
+    override bool TryPickup (in out Actor toucher)
+    {
+        if (!toucher.FindInventory ("JGP_Unmaker"))
+            return false;
+        
+        return super.TryPickup(toucher);
+    }
+
+    void SpawnLights(double baseLightSize = 36, int lightSizeStep = 3)
+    {
+        A_AttachLight(
+            "UnmakerKeyLight", 
+            DynamicLight.PointLight, 
+            keycolor,
+            baseLightSize - curstate.frame * lightSizeStep,
+            0,
+            flags: DYNAMICLIGHT.LF_ATTENUATE,
+            ofs: (0, 0, 32)
+        );
+
+        if (random[unmp](1, 2) == 2)
+        {
+            double vx = frandom[unmp](0.3, 1.0);
+            double vz = frandom[unmp](0.3, 0.9);
+            int lt = random[unmp](18, 25);
+            A_SpawnParticle(
+                keycolor,
+                flags: SPF_RELATIVE|SPF_FULLBRIGHT,
+                lifetime: lt,
+                size: random[unmp](3,5),
+                angle: random[unmp](0, 359),
+                xoff: frandom[unmp](-12,12),
+                zoff: frandom[unmp](40, 48),
+                velx: vx,
+                velz: vz,
+                accelx: -(vx * 0.1),
+                accelz: -(vz * 0.05),
+                sizestep: -0.03
+            );
+        }
     }
 }
 
@@ -244,11 +301,12 @@ class JGP_UnmakerKeyOrange : JGP_UnmakerKeyBase
     Default
     {
         Inventory.Pickupmessage "You have a feeling that that it wasn't to be touched...";
+        JGP_UnmakerKeyBase.keycolor "d05f03";
     }
 
     States {
     Spawn:
-        ART1 ABCDEDCB 2;
+        UMK1 ABCDEDCB 4 SpawnLights();
         loop;
     }
 }
@@ -258,11 +316,12 @@ class JGP_UnmakerKeyPurple : JGP_UnmakerKeyBase
     Default
     {
         Inventory.Pickupmessage "Whatever it is, it doesn't belong in this world...";
+        JGP_UnmakerKeyBase.keycolor "7800e0";
     }
 
     States {
     Spawn:
-        ART2 ABCDEDCB 2;
+        UMK2 ABCDEDCB 4 SpawnLights();
         loop;
     }
 }
@@ -272,11 +331,12 @@ class JGP_UnmakerKeyCyan : JGP_UnmakerKeyBase
     Default
     {
         Inventory.Pickupmessage "It must do something...";
+        JGP_UnmakerKeyBase.keycolor "0ba6da";
     }
 
     States {
     Spawn:
-        ART3 ABCDEDCB 2;
+        UMK3 ABCDEDCB 4 SpawnLights();
         loop;
     }
 }
