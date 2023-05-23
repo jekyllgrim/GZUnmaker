@@ -1,1 +1,2 @@
-weapons/unmaker/fire DSLASER
+gzunmaker/fire  DSLASER
+gzunmaker/key   D64KEYUP

@@ -94,7 +94,7 @@ class JGP_Unmaker : Weapon
         if (!invoker.DepleteAmmo(false))
             return;
         
-        A_StartSound("weapons/unmaker/fire", CHAN_WEAPON);
+        A_StartSound("gzunmaker/fire", CHAN_WEAPON);
         A_Overlay(100, "UnFlash");
         
         if (ulevel <= 1)
@@ -231,7 +231,7 @@ class JGP_UnmakerKeyBase : Inventory abstract
         +INVENTORY.AUTOACTIVATE
         +BRIGHT
         Inventory.maxamount 1;
-        Inventory.pickupsound "misc/p_pkup";
+        Inventory.pickupsound "gzunmaker/key";
         YScale 0.834;
     }
 
