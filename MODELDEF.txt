@@ -4,7 +4,7 @@ Model JGP_UnmakerProjectile
     Model 0 "laser1.obj"
     UseActorPitch
     AngleOffset 90
-    ZOffset 6
+    ZOffset 2
 
     Scale 80 1 0.3
     FrameIndex AMRK A 0 0
