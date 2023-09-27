@@ -1,17 +1,10 @@
-Model JGP_UnmakerProjectile
+Model JGP_UnmakerBeam
 {
-    Path "models/unmaker"
-    Model 0 "laser1.obj"
-    UseActorPitch
-    AngleOffset 90
-    ZOffset 2
-
-    Scale 80 1 0.3
-    FrameIndex AMRK A 0 0
-    Scale 56 1 0.3
-    FrameIndex AMRK B 0 0
-    Scale 32 1 0.3
-    FrameIndex AMRK C 0 0
-    Scale 16 1 0.3
-    FrameIndex AMRK D 0 0
+	Path "Models/Unmaker/GZBeam"
+	Model 0 "beam.md3"
+	Skin 0 "laser.png"
+	AngleOffset -90
+	USEACTORPITCH
+	
+	FrameIndex AMRK A 0 0
 }
