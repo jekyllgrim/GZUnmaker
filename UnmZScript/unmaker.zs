@@ -95,9 +95,19 @@ class JGP_Unmaker : Weapon
 		let tracker = JGP_UnmakerBeamTracker(SpawnPlayerMissile("JGP_UnmakerBeamTracker", aAngle, trackerOfs.x, trackerOfs.y, -16));
 		if (tracker && puf)
 		{
-			tracker.A_Face(puf, 0,0);
-			tracker.Vel3DFromAngle(tracker.speed, tracker.angle, tracker.pitch);
-			tracker.endpos = puf.pos;
+			// Get difference between tracker position and puff position:
+			let diff = Level.Vec3Diff(tracker.pos, puf.pos);
+			// If it's too short, destroy the tracker. Otherwise it can
+			// cause weird angles and visuals due to how projectiles
+			// behave:
+			if (diff.Length() <= tracker.speed)
+			{
+				tracker.Destroy();
+			}
+			// Otherwise launch the tracker at the puff:
+			let dir = diff.Unit();
+			tracker.vel = dir * tracker.speed;
+			tracker.A_FaceMovementDirection();
 		}
 		//let beam = JGP_UnmakerBeam(JGP_UnmakerBeam.Create(
 		//A_FireBullets(angleofs, 0, -1, damage, "JGP_UnmakerPuff", FBF_NoRandom|FBF_NoFlash|FBF_NoRandomPuffZ|FBF_ExplicitAngle, missile: "JGP_UnmakerBeamTracker", spawnheight: 0);
