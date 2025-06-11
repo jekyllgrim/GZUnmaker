@@ -143,7 +143,8 @@ class JGP_Unmaker : Weapon
 			// If it's too short, destroy the tracker. Otherwise it can
 			// cause weird angles and visuals due to how projectiles
 			// behave:
-			if (diff.Length() <= tracker.speed)
+			double dist = diff.Length();
+			if (dist <= tracker.speed)
 			{
 				tracker.Destroy();
 			}
@@ -151,6 +152,7 @@ class JGP_Unmaker : Weapon
 			let dir = diff.Unit();
 			tracker.vel = dir * tracker.speed;
 			tracker.A_FaceMovementDirection();
+			tracker.trackerLifeTime = int(round(dist / tracker.vel.Length()));
 		}
 	}
 
@@ -291,10 +293,10 @@ class JGP_UnmakerPuff : Actor
 {
 	Default
 	{
-		-ALLOWPARTICLES
+		+PUFFONACTORS
+		+ALWAYSPUFF
 		+NOINTERACTION
 		+BRIGHT
-		+PUFFONACTORS
 		RenderStyle 'Add';
 	}
 
@@ -330,12 +332,12 @@ class JGP_UnmakerBeam : JGPUNM_LaserBeam
 class JGP_UnmakerBeamTracker : Actor
 {
 	JGP_UnmakerBeam beam;
+	uint trackerLifeTime;
 
 	Default
 	{
-		Projectile;
-		+BLOODLESSIMPACT
-		damage 0;
+		+MISSILE;
+		+NOINTERACTION
 		speed 56;
 		radius 1;
 		height 1;
@@ -350,8 +352,17 @@ class JGP_UnmakerBeamTracker : Actor
 
 	States {
 	Spawn:
-		TNT1 A -1;
-		stop;
+		TNT1 A 1
+		{
+			trackerLifeTime--;
+			if (trackerLifeTime <= 0)
+			{
+				ExplodeMissile();
+				return ResolveState("Death");
+			}
+			return ResolveState(null);
+		}
+		loop;
 	Death:
 		TNT1 A 1
 		{
