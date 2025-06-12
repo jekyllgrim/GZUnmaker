@@ -49,5 +49,3 @@ You can adjust firing speeds by editing the `EFirerates` enum block in the JGP_U
 Agent_Ash - code, graphics editing
 
 Midway Studios - original concept, graphics
-
-Lewisk3 - GZBeamz library

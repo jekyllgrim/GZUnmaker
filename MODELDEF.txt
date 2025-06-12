@@ -1,8 +1,7 @@
-Model JGP_UnmakerBeam
+Model JGP_UnmakerBeamTracker
 {
-	Path "Models/Unmaker/GZBeam"
-	Model 0 "beam.md3"
-	Skin 0 "laser.png"
+	Path "Models/Unmaker"
+	Model 0 "unmkbeam.obj"
 	AngleOffset -90
 	USEACTORPITCH
 	

@@ -45,21 +45,20 @@ class JGP_Unmaker : Weapon
 		if (um)
 		{
 			// update the level:
-			um.GetLevel();
+			um.UpdateLevel();
 			return um.unmklevel;
 		}
 
 		return -1;
 	}
 
-	// This really should be called "UpdateLevel", but it is what it is.
 	// This function updates the unmklevel variable to make sure it
 	// reflects the Unmaker's current level. It really didn't have to
 	// be done like that; the Demon Keys could just increment unmklevel
 	// manually, but I wanted to wrap it all into a function. This also
 	// updates the level regardless of the order of keys. AND this updates
 	// Unmaker's HUD icon!
-	int GetLevel()
+	int UpdateLevel()
 	{
 		if (!owner)
 			return -1;
@@ -108,7 +107,7 @@ class JGP_Unmaker : Weapon
 	override void AttachToOwner(Actor other)
 	{
 		super.AttachToOwner(other);
-		GetLevel();
+		UpdateLevel();
 	}
 
 	// Fires a single beam at the specified angle, dealing specified damage:
@@ -124,6 +123,7 @@ class JGP_Unmaker : Weapon
 		// Lineattack. Note that 64 Unmaker has a range of 4096, as opposed
 		// to normal hitscans that have 8192:
 		let puf = JGP_UnmakerPuff(LineAttack(aAngle, 4096, aSlope, damage, 'Hitscan', "JGP_UnmakerPuff", LAF_NORANDOMPUFFZ));
+		if (!puf) return;
 		// Fire a projectile aimed at a puff. Using SpawnPlayerMissile here
 		// to get around any special implicit behavior from A_FireProjectile.
 		// SpawnPlayerMissile uses absolute angle, so we need to calculate the
@@ -135,24 +135,24 @@ class JGP_Unmaker : Weapon
 		// This imitates the behavior of the original Unmaker, where the beam immediately
 		// stretches over the whole distance, and then gradually starts disappearing
 		// from the beginning.
-		let tracker = JGP_UnmakerBeamTracker(SpawnPlayerMissile("JGP_UnmakerBeamTracker", aAngle, trackerOfs.x, trackerOfs.y, -16));
-		if (tracker && puf)
+		Quat angles = Quat.FromAngles(angle, pitch, roll);
+		double distToPuff = level.Vec3Diff((pos.xy, player.viewz), puf.pos).Length();
+		Vector3 trackerPos = level.Vec3Offset((pos.xy, player.viewz), angles * (min(24, distToPuff), 0, -10));
+		let diff = Level.Vec3Diff(trackerPos, puf.pos);
+		let dist = diff.Length();
+
+		let tracker = JGP_UnmakerBeamTracker(Spawn('JGP_UnmakerBeamTracker', trackerPos));
+		if (tracker)
 		{
+			tracker.master = self;
 			// Get difference between tracker position and puff position:
-			let diff = Level.Vec3Diff(tracker.pos, puf.pos);
-			// If it's too short, destroy the tracker. Otherwise it can
-			// cause weird angles and visuals due to how projectiles
-			// behave:
-			double dist = diff.Length();
-			if (dist <= tracker.speed)
-			{
-				tracker.Destroy();
-			}
 			// Otherwise launch the tracker at the puff:
 			let dir = diff.Unit();
-			tracker.vel = dir * tracker.speed;
+			tracker.vel = dir * min(dist, tracker.speed);
+			tracker.trackerLifeTime = int(ceil(dist / tracker.vel.Length()));
 			tracker.A_FaceMovementDirection();
-			tracker.trackerLifeTime = int(round(dist / tracker.vel.Length()));
+			tracker.pitch += 90;
+			tracker.trackerEndPos = puf.pos;
 		}
 	}
 
@@ -163,7 +163,7 @@ class JGP_Unmaker : Weapon
 			return;
 
 		// Get the level:
-		int ulevel = invoker.GetLevel();
+		int ulevel = invoker.UpdateLevel();
 
 		// Modify ammouse based on the level:
 		switch (ulevel) {
@@ -313,63 +313,38 @@ class JGP_UnmakerPuff : Actor
 	}
 }
 
-// Beam actor, based on the beam from GZBeamz.
-// Slightly bigger than normal and uses Normal
-// renderstyle to imitate the original look:
-class JGP_UnmakerBeam : JGPUNM_LaserBeam
-{
-	Default
-	{
-		Renderstyle 'Normal';
-		Alpha 1.0;
-		xscale 2.85;
-		+BRIGHT
-	}
-}
-
 // Pseudo projectile fired by the attack. Aimed at a puff.
 // The 3D beam is stretched between it and the puff.
 class JGP_UnmakerBeamTracker : Actor
 {
-	JGP_UnmakerBeam beam;
 	uint trackerLifeTime;
+	Vector3 trackerEndPos;
 
 	Default
 	{
-		+MISSILE;
 		+NOINTERACTION
+		+NOBLOCKMAP
+		+BRIGHT
 		speed 56;
-		radius 1;
-		height 1;
-	}
-
-	override void PostBeginPlay()
-	{
-		super.PostBeginPlay();
-		beam = JGP_UnmakerBeam(JGPUNM_LaserBeam.Create(self, 0, 0, 0, type: "JGP_UnmakerBeam"));
-		beam.SetEnabled(true);
 	}
 
 	States {
 	Spawn:
-		TNT1 A 1
+		AMRK A 1 NoDelay
+		{
+			scale.y = level.Vec3Diff(pos, trackerEndPos).Length();
+		}
+		TNT1 A 0
 		{
 			trackerLifeTime--;
 			if (trackerLifeTime <= 0)
 			{
-				ExplodeMissile();
-				return ResolveState("Death");
+				Destroy();
+				return ResolveState("Null");
 			}
 			return ResolveState(null);
 		}
 		loop;
-	Death:
-		TNT1 A 1
-		{
-			if (beam)
-				beam.Destroy();
-		}
-		stop;
 	}
 }
 
